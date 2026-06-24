@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
 
-# 強制隱藏側邊欄，讓畫面 100% 滿版
+# 🚨 強制隱藏側邊欄，讓畫面 100% 滿版
 st.set_page_config(
-    page_title="精品美妝 & 包款複合式優惠計算器", 
+    page_title="murfeeli優惠計算器", 
     page_icon="🛍️", 
     layout="wide",
     initial_sidebar_state="collapsed" 
@@ -141,7 +141,7 @@ PACKAGE_TWO_ITEM_DISCOUNTS = [
 ]
 
 # -----------------------------
-# 核心優惠計算邏輯
+# 核心計算邏輯
 # -----------------------------
 def calc_original(cart):
     return sum(PRICES[p] * qty for p, qty in cart.items())
@@ -153,7 +153,8 @@ def apply_combos(cart_tuple):
         parts = item.split(":")
         k = parts[0]
         v = int(parts[1])
-        if v > 0: cart[k] = v
+        if v > 0:
+            cart[k] = v
             
     best_price = 0
     for p, q in cart.items():
@@ -163,27 +164,47 @@ def apply_combos(cart_tuple):
     if best_price > 0:
         best_plan = [(f"{p} × {q} (原價)", PRICES[p] * q) for p, q in cart.items() if q > 0]
     
-    # 1. 大套組
+    # 1. 檢查大套組優惠
     for s, price in BIG_SETS.items():
         set_counts = Counter(s)
-        if all(cart.get(k, 0) >= v for k, v in set_counts.items()):
+        can_apply = True
+        for k, v in set_counts.items():
+            if cart.get(k, 0) < v:
+                can_apply = False
+                break
+        if can_apply:
             temp = cart.copy()
-            for i in s: temp[i] -= 1
-            temp_list = [f"{tk}:{tv}" for tk, tv in temp.items() if tv > 0]
-            new_price, plan = apply_combos(tuple(sorted(temp_list)))
+            for i in s: 
+                temp[i] -= 1
+            
+            temp_list = []
+            for tk, tv in temp.items():
+                temp_list.append(f"{tk}:{tv}")
+            new_price, plan = apply_combos(tuple(temp_list))
+            
             total = price + new_price
             if total < best_price:
                 best_price = total
                 best_plan = [(f"{'+'.join(s)} 大套組", price)] + plan
                 
-    # 2. 固定組合優惠
+    # 2. 檢查固定組合優惠
     for c, (_, disc) in COMBOS_SORTED:
         combo_counts = Counter(c)
-        if all(cart.get(k, 0) >= v for k, v in combo_counts.items()):
+        can_apply = True
+        for k, v in combo_counts.items():
+            if cart.get(k, 0) < v:
+                can_apply = False
+                break
+        if can_apply:
             temp = cart.copy()
-            for i in c: temp[i] -= 1
-            temp_list = [f"{tk}:{tv}" for tk, tv in temp.items() if tv > 0]
-            new_price, plan = apply_combos(tuple(sorted(temp_list)))
+            for i in c: 
+                temp[i] -= 1
+                
+            temp_list = []
+            for tk, tv in temp.items():
+                temp_list.append(f"{tk}:{tv}")
+            new_price, plan = apply_combos(tuple(temp_list))
+            
             total = disc + new_price
             if total < best_price:
                 best_price = total
@@ -191,26 +212,43 @@ def apply_combos(cart_tuple):
                 
     cosmetics = []
     for p, q in cart.items():
-        if p in COSMETIC_ITEMS: cosmetics += [p] * q
+        if p in COSMETIC_ITEMS: 
+            cosmetics += [p] * q
 
     baguette = list(cosmetics)
-    if "法棍包" in cart: baguette += ["法棍包"] * cart["法棍包"]
+    if "法棍包" in cart: 
+        baguette += ["法棍包"] * cart["法棍包"]
 
     puff = list(cosmetics)
-    if "泡芙肩背包" in cart: puff += ["泡芙肩背包"] * cart["泡芙肩背包"]
+    if "泡芙肩背包" in cart: 
+        puff += ["泡芙肩背包"] * cart["泡芙肩背包"]
 
     # 3. 任三件 9 折
     for items in [cosmetics, baguette, puff]:
         if len(items) >= 3:
             for group in set(combinations(items, 3)):
-                if "法棍包" in group and "泡芙肩背包" in group: continue
-                if any(cart.get(g, 0) <= 0 for g in group): continue
+                if "法棍包" in group and "泡芙肩背包" in group: 
+                    continue
                 temp = cart.copy()
-                for g in group: temp[g] -= 1
-                group_sum = sum(PRICES[g] for g in group)
+                valid = True
+                for g in group:
+                    if temp.get(g, 0) <= 0:
+                        valid = False
+                        break
+                    temp[g] -= 1
+                if not valid: 
+                    continue
+
+                group_sum = 0
+                for g in group:
+                    group_sum += PRICES[g]
                 price = int(round(group_sum * 0.9))
-                temp_list = [f"{tk}:{tv}" for tk, tv in temp.items() if tv > 0]
-                new_price, plan = apply_combos(tuple(sorted(temp_list)))
+                
+                temp_list = []
+                for tk, tv in temp.items():
+                    temp_list.append(f"{tk}:{tv}")
+                new_price, plan = apply_combos(tuple(temp_list))
+                
                 total = price + new_price
                 if total < best_price:
                     best_price = total
@@ -220,14 +258,28 @@ def apply_combos(cart_tuple):
     for items in [cosmetics, baguette, puff]:
         if len(items) >= 2:
             for group in set(combinations(items, 2)):
-                if "法棍包" in group and "泡芙肩背包" in group: continue
-                if any(cart.get(g, 0) <= 0 for g in group): continue
+                if "法棍包" in group and "泡芙肩背包" in group: 
+                    continue
                 temp = cart.copy()
-                for g in group: temp[g] -= 1
-                group_sum = sum(PRICES[g] for g in group)
+                valid = True
+                for g in group:
+                    if temp.get(g, 0) <= 0:
+                        valid = False
+                        break
+                    temp[g] -= 1
+                if not valid: 
+                    continue
+
+                group_sum = 0
+                for g in group:
+                    group_sum += PRICES[g]
                 price = int(round(group_sum * 0.95))
-                temp_list = [f"{tk}:{tv}" for tk, tv in temp.items() if tv > 0]
-                new_price, plan = apply_combos(tuple(sorted(temp_list)))
+                
+                temp_list = []
+                for tk, tv in temp.items():
+                    temp_list.append(f"{tk}:{tv}")
+                new_price, plan = apply_combos(tuple(temp_list))
+                
                 total = price + new_price
                 if total < best_price:
                     best_price = total
@@ -237,33 +289,74 @@ def apply_combos(cart_tuple):
     for must_items, optional_items, rate in PACKAGE_TWO_ITEM_DISCOUNTS:
         if optional_items is None:
             eligible = []
-            for item in must_items: eligible += [item] * cart.get(item, 0)
+            for item in must_items: 
+                eligible += [item] * cart.get(item, 0)
             if len(eligible) >= 2:
                 for group in set(combinations(eligible, 2)):
                     temp = cart.copy()
-                    for g in group: temp[g] -= 1
-                    price = rate if rate > 1 else int(round(sum(PRICES[g] for g in group) * rate))
-                    label_desc = f"組合價${rate}" if rate > 1 else f"任兩件{int(rate*100)}折"
-                    temp_list = [f"{tk}:{tv}" for tk, tv in temp.items() if tv > 0]
-                    new_price, plan = apply_combos(tuple(sorted(temp_list)))
+                    for g in group: 
+                        temp[g] -= 1
+                    
+                    if rate > 1:
+                        price = rate
+                    else:
+                        group_sum = 0
+                        for g in group:
+                            group_sum += PRICES[g]
+                        price = int(round(group_sum * rate))
+                        
+                    if rate > 1:
+                        label_desc = f"組合價${rate}"
+                    else:
+                        label_desc = f"任兩件{int(rate*100)}折"
+                        
+                    temp_list = []
+                    for tk, tv in temp.items():
+                        temp_list.append(f"{tk}:{tv}")
+                    new_price, plan = apply_combos(tuple(temp_list))
+                    
                     total = price + new_price
                     if total < best_price:
                         best_price = total
                         best_plan = [(f"{'+'.join(group)} {label_desc}", price)] + plan
         else:
-            must_eligible = [i for i in must_items if cart.get(i, 0) > 0]
-            optional_eligible = [i for i in optional_items if cart.get(i, 0) > 0]
+            must_eligible = []
+            for item in must_items: 
+                must_eligible += [item] * cart.get(item, 0)
+            optional_eligible = []
+            for item in optional_items: 
+                optional_eligible += [item] * cart.get(item, 0)
+            
             if must_eligible and optional_eligible:
+                processed_pairs = set()
                 for g1 in must_eligible:
                     for g2 in optional_eligible:
-                        if g1 == g2 and cart.get(g1, 0) < 2: continue
+                        if g1 == g2 and must_eligible.count(g1) <= 1: 
+                            continue
+                        pair = tuple(sorted([g1, g2]))
+                        if pair in processed_pairs: 
+                            continue
+                        processed_pairs.add(pair)
+                        
                         temp = cart.copy()
                         temp[g1] -= 1
                         temp[g2] -= 1
-                        price = rate if rate > 1 else int(round((PRICES[g1] + PRICES[g2]) * rate))
-                        label_desc = f"組合價${rate}" if rate > 1 else f"{int(rate*100)}折"
-                        temp_list = [f"{tk}:{tv}" for tk, tv in temp.items() if tv > 0]
-                        new_price, plan = apply_combos(tuple(sorted(temp_list)))
+                        
+                        if rate > 1:
+                            price = rate
+                        else:
+                            price = int(round((PRICES[g1] + PRICES[g2]) * rate))
+                            
+                        if rate > 1:
+                            label_desc = f"組合價${rate}"
+                        else:
+                            label_desc = f"{int(rate*100)}折"
+                            
+                        temp_list = []
+                        for tk, tv in temp.items():
+                            temp_list.append(f"{tk}:{tv}")
+                        new_price, plan = apply_combos(tuple(temp_list))
+                        
                         total = price + new_price
                         if total < best_price:
                             best_price = total
@@ -272,32 +365,20 @@ def apply_combos(cart_tuple):
     return best_price, best_plan
 
 # -----------------------------
-# 🎁 滿額禮門檻輔助
-# -----------------------------
-def get_gift_names(price):
-    gifts = []
-    if price >= 2500: gifts.append("2500滿額禮")
-    if price >= 4000: gifts.append("4000滿額禮")
-    if price >= 5000: gifts.append("5000滿額禮")
-    return gifts
-
-def cart_to_tuple(cart):
-    return tuple(f"{k}:{v}" for k, v in sorted(cart.items()) if v > 0)
-
-# -----------------------------
 # UI 介面展示
 # -----------------------------
 def main():
-    st.markdown("<h1 style='text-align: center;'>🛍️ Murfeeli優惠組合價計算器</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #8C7662;'>【經典單筆結帳模式】最速自動配對最佳折扣</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #8C7662;'>🛍️ murfeeli組合優惠計算器</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #A08875;'>即時精算全店最優組合優惠價</p>", unsafe_allow_html=True)
     st.write("")
 
     for p in PRICES: 
         st.session_state.setdefault(f"qty_{p}", 0)
 
+    # 主畫面頂部控制區
     col_space, col_btn = st.columns([5, 1])
     with col_btn:
-        if st.button("🔄 快速清空", use_container_width=True):
+        if st.button("🔄 快速清空購物車", use_container_width=True):
             for p in PRICES: st.session_state[f"qty_{p}"] = 0
             st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
@@ -329,53 +410,37 @@ def main():
         
         if not cart:
             st.warning("🛒 目前購物車空空如也，請先至前面分頁挑選商品。")
-            return
-
-        for item, qty in cart.items():
-            st.markdown(f"🤎 **{item}** × {qty} 件 — `NT${PRICES[item]*qty:,}`")
-        st.markdown("---")
-        
-        # 1. 跑核心計算：直接跑單筆最優折扣
-        original_total_price = calc_original(cart)
-        final_price, best_plan = apply_combos(cart_to_tuple(cart))
-        gift_list = get_gift_names(final_price)
-
-        # 頂部儀表板
-        res_col1, res_col2, res_col3 = st.columns(3)
-        with res_col1:
-            st.metric(label="商品原價合計", value=f"NT$ {original_total_price:,}")
-        with res_col2:
-            st.metric(label="✨ 最終折抵後金額", value=f"NT$ {final_price:,}", delta=f"已為您省下 NT$ {original_total_price - final_price:,}", delta_color="inverse")
-        with res_col3:
-            st.metric(label="🎁 可獲得滿額禮總數", value=f"{len(gift_list)} 個")
-            
-        st.write("")
-        
-        # 呈現單筆明細指引
-        st.success("🌟 系統已自動套用最划算的折扣優惠組合！")
-        st.write("")
-        
-        st.markdown(f"### 🛒 【結帳刷卡指引】")
-        
-        if gift_list:
-            gift_tags = "、".join([f"`{g}`" for g in gift_list])
-            st.markdown(f"🎁 **本單可拿滿額禮：** {gift_tags} (共計 **{len(gift_list)}** 個)")
         else:
-            st.markdown("🎁 **本單可拿滿額禮：** `無` (金額未滿 $2,500 門檻)")
+            for item, qty in cart.items():
+                st.markdown(f"🤎 **{item}** × {qty} 件 — `NT${PRICES[item]*qty:,}`")
             
-        items_str = ", ".join([f"**{k}** × {v}" for k, v in cart.items()])
-        st.markdown(f"📦 **請在 POS 機直接刷入商品：** {items_str}")
-        
-        with st.container(border=True):
-            st.markdown("📋 **本單最划算金額配對與明細：**")
-            display_plan = [f"• {name} → `NT${price:,}`" for name, price in best_plan if price > 0]
-            if display_plan:
-                for line in display_plan:
-                    st.markdown(line)
-            else:
-                st.markdown("• 本單無合用組合。")
-            st.markdown(f"💰 **應付總結帳金額：`NT$ {final_price:,}`**")
-        st.write("")
+            st.markdown("---")
+            
+            original = calc_original(cart)
+            
+            cart_list = []
+            for k, v in cart.items():
+                cart_list.append(f"{k}:{v}")
+            best, plan = apply_combos(tuple(cart_list))
+            
+            res_col1, res_col2, res_col3 = st.columns(3)
+            with res_col1:
+                st.metric(label="商品原價合計", value=f"NT$ {original:,}")
+            with res_col2:
+                st.metric(label="✨ 最優折扣價", value=f"NT$ {best:,}")
+            with res_col3:
+                st.metric(label="💰 現省金額", value=f"NT$ {original - best:,}", delta=f"已省 ${original - best:,}")
+                
+            st.write("")
+            
+            with st.container(border=True):
+                st.markdown("### 🎯 最佳優惠搭配組合方案")
+                display_plan = [f"✅ {name} → `NT${price:,}`" for name, price in plan if price > 0]
+                if display_plan:
+                    for item in display_plan:
+                        st.markdown(item)
+                else:
+                    st.markdown("• 本單查無適用組合。")
 
 if __name__ == "__main__":
     main()
