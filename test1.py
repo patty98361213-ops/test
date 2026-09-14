@@ -19,6 +19,9 @@ st.set_page_config(
 # -----------------------------
 # 🎨 注入法式奶油色系 CSS 外觀
 # -----------------------------
+# -----------------------------
+# 🎨 注入法式奶油色系 CSS 外觀（已修復標籤文字顏色）
+# -----------------------------
 st.markdown("""
 <style>
     /* 全局背景與主體字體 */
@@ -36,7 +39,16 @@ st.markdown("""
     h2, h3, h4, h5, h6 {
         color: #A08875 !important;
     }
-    
+
+    /* 🎯 修正：選項/商品標籤文字顏色（與主標題同色 #8C7662） */
+    label[data-testid="stWidgetLabel"] p, 
+    .stNumberInput label,
+    div[data-testid="stWidgetLabel"] {
+        color: #8C7662 !important;
+        font-weight: 600 !important;
+        font-size: 15px !important;
+    }
+
     /* 頂部 Tabs 標籤頁樣式 */
     button[data-baseweb="tab"] {
         color: #A08875 !important;
@@ -48,12 +60,17 @@ st.markdown("""
         border-bottom-color: #C6B49F !important;
     }
     
-    /* 數值輸入框樣式 */
+    /* 數值輸入框內部數字樣式 */
     .stNumberInput input {
         background-color: #FFFDF9 !important;
         color: #4A3E3D !important;
         border-color: #E6DDD3 !important;
         border-radius: 8px !important;
+    }
+
+    /* 副標題與備註小字（如單價說明） */
+    .stCaption, div[data-testid="stCaptionContainer"] {
+        color: #8C7662 !important;
     }
     
     /* 按鈕樣式 */
