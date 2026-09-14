@@ -1,10 +1,91 @@
 # -*- coding: utf-8 -*-
-"""
-保養品 + 包款組合優惠計算器（完整整合版）
-"""
 import streamlit as st
+
+# 🚨 強制隱藏側邊欄，讓畫面 100% 滿版
+st.set_page_config(
+    page_title="murfeeli優惠計算器", 
+    page_icon="🛍️", 
+    layout="wide",
+    initial_sidebar_state="collapsed" 
+)
+
+# -----------------------------
+# 🎨 注入法式奶油色系 CSS 外觀
+# -----------------------------
+st.markdown("""
+<style>
+    /* 全局背景與主體字體 */
+    .stApp {
+        background-color: #FDFBF7 !important;
+        color: #4A3E3D !important;
+    }
+    
+    /* 標題與副標題色調 */
+    h1 {
+        color: #8C7662 !important;
+        font-weight: 700 !important;
+    }
+    h2, h3, h4, h5, h6 {
+        color: #A08875 !important;
+    }
+    
+    /* 頂部 Tabs 標籤頁樣式 */
+    button[data-baseweb="tab"] {
+        color: #A08875 !important;
+        font-weight: 600 !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #6E5A4B !important;
+        border-bottom-color: #C6B49F !important;
+    }
+    
+    /* 數值輸入框樣式 */
+    .stNumberInput input {
+        background-color: #FFFDF9 !important;
+        color: #4A3E3D !important;
+        border-color: #E6DDD3 !important;
+    }
+    
+    /* 按鈕樣式 (快速清空) */
+    div.stButton > button {
+        background-color: #F4EFE6 !important;
+        color: #7A6555 !important;
+        border: 1px solid #DCD1C4 !important;
+        border-radius: 20px !important;
+    }
+    div.stButton > button:hover {
+        background-color: #E6DDD3 !important;
+        color: #5A4A3D !important;
+        border-color: #C6B49F !important;
+    }
+    
+    /* 區塊容器 (Border Container) 奶油化 */
+    div[data-testid="stMetric"] {
+        background-color: #F7F2E8 !important;
+        padding: 15px !important;
+        border-radius: 12px !important;
+        border: 1px solid #E6DDD3 !important;
+    }
+    
+    /* 提示框 (Alerts) 柔和化 */
+    .stAlert {
+        background-color: #F5EFE4 !important;
+        color: #6E5A4B !important;
+        border-left-color: #C6B49F !important;
+    }
+    
+    /* 明細小字卡 */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #FFFDF9 !important;
+        border: 1px solid #EAE3D5 !important;
+        border-radius: 12px !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 from itertools import combinations
 from functools import lru_cache
+from collections import Counter
 
 # -----------------------------
 # 單品價格
