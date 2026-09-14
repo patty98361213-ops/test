@@ -1,91 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+保養品 + 包款組合優惠計算器（完整整合版）
+"""
 import streamlit as st
-
-# 🚨 強制隱藏側邊欄，讓畫面 100% 滿版
-st.set_page_config(
-    page_title="murfeeli優惠計算器", 
-    page_icon="🛍️", 
-    layout="wide",
-    initial_sidebar_state="collapsed" 
-)
-
-# -----------------------------
-# 🎨 注入法式奶油色系 CSS 外觀
-# -----------------------------
-st.markdown("""
-<style>
-    /* 全局背景與主體字體 */
-    .stApp {
-        background-color: #FDFBF7 !important;
-        color: #4A3E3D !important;
-    }
-    
-    /* 標題與副標題色調 */
-    h1 {
-        color: #8C7662 !important;
-        font-weight: 700 !important;
-    }
-    h2, h3, h4, h5, h6 {
-        color: #A08875 !important;
-    }
-    
-    /* 頂部 Tabs 標籤頁樣式 */
-    button[data-baseweb="tab"] {
-        color: #A08875 !important;
-        font-weight: 600 !important;
-    }
-    button[data-baseweb="tab"][aria-selected="true"] {
-        color: #6E5A4B !important;
-        border-bottom-color: #C6B49F !important;
-    }
-    
-    /* 數值輸入框樣式 */
-    .stNumberInput input {
-        background-color: #FFFDF9 !important;
-        color: #4A3E3D !important;
-        border-color: #E6DDD3 !important;
-    }
-    
-    /* 按鈕樣式 (快速清空) */
-    div.stButton > button {
-        background-color: #F4EFE6 !important;
-        color: #7A6555 !important;
-        border: 1px solid #DCD1C4 !important;
-        border-radius: 20px !important;
-    }
-    div.stButton > button:hover {
-        background-color: #E6DDD3 !important;
-        color: #5A4A3D !important;
-        border-color: #C6B49F !important;
-    }
-    
-    /* 區塊容器 (Border Container) 奶油化 */
-    div[data-testid="stMetric"] {
-        background-color: #F7F2E8 !important;
-        padding: 15px !important;
-        border-radius: 12px !important;
-        border: 1px solid #E6DDD3 !important;
-    }
-    
-    /* 提示框 (Alerts) 柔和化 */
-    .stAlert {
-        background-color: #F5EFE4 !important;
-        color: #6E5A4B !important;
-        border-left-color: #C6B49F !important;
-    }
-    
-    /* 明細小字卡 */
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: #FFFDF9 !important;
-        border: 1px solid #EAE3D5 !important;
-        border-radius: 12px !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 from itertools import combinations
 from functools import lru_cache
-from collections import Counter
 
 # -----------------------------
 # 單品價格
@@ -160,7 +79,7 @@ PACKAGE_TWO_ITEM_DISCOUNTS = [
     (["長夾","掀蓋零錢夾","中夾","短夾","零錢夾"], ["法棍包"], 0.95),
     (["束口後背包", "經典後背包"], None, 0.95),  # 任二
     (["束口後背包"], ["潔顏露"], 0.9),
-    (["經典後背包"], ["潔顏露"], 1680 / (1280 + 480)), # 將固定優惠價轉為乘數折扣率
+    (["經典後背包"], ["潔顏露"], 1680 / (1280 + 480)), # 將固定優惠價轉為折扣率
     (["中夾","短夾","零錢夾"], None, 0.95),  # 任二
     (["中夾","短夾","零錢夾"], ["潔顏露","體香噴霧","隔離"], 0.9),
     (["長夾","掀蓋零錢夾"], None, 0.95),      # 任二
@@ -241,7 +160,6 @@ def apply_combos(cart_tuple):
     for items in discount_groups_3:
         if len(items) >= 3:
             for group in combinations(items, 3):
-                # 禁止同時出現兩種包包 (於各自陣列中已物理隔離，保留此檢查防呆)
                 if "法棍包" in group and "泡芙肩背包" in group:
                     continue
 
@@ -398,7 +316,9 @@ def main():
             
     if calc_btn:
         cart = {p: st.session_state[f"qty_{p}"] for p in PRICES}
-        if sum(cart.values())==0:
+        total_items = sum(cart.values()) # 取得總件數
+        
+        if total_items == 0:
             st.warning("請先選擇商品數量喔！")
         else:
             original = calc_original(cart)
@@ -406,9 +326,11 @@ def main():
             st.markdown("---")
             st.subheader("💸 計算結果")
             
+            # 將畫面切割為三等份，新增顯示總件數
             col_res1, col_res2, col_res3 = st.columns(3)
-            col_res1.metric("原價總計", f"NT${original:,}")
-            col_res2.metric("最優價格", f"NT${best:,}", delta=f"省下 NT${original-best:,}")
+            col_res1.metric("🛒 總件數", f"{total_items} 件")
+            col_res2.metric("📋 原價總計", f"NT${original:,}")
+            col_res3.metric("🎉 最優價格", f"NT${best:,}", delta=f"省下 NT${original-best:,}")
             
             st.subheader("🎯 最佳組合拆解")
             for name, price in plan:
