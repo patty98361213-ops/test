@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-murfeeli 優惠計算器（法式奶油風 UI 版）
+murfeeli 優惠計算器（法式奶油風 UI + 獨立結帳頁面）
 """
 import streamlit as st
 from itertools import combinations
@@ -56,7 +56,7 @@ st.markdown("""
         border-radius: 8px !important;
     }
     
-    /* 按鈕樣式 (重置與計算) */
+    /* 按鈕樣式 */
     div.stButton > button {
         background-color: #F4EFE6 !important;
         color: #7A6555 !important;
@@ -93,7 +93,7 @@ st.markdown("""
         background-color: #FFFDF9 !important;
         border: 1px solid #EAE3D5 !important;
         border-radius: 14px !important;
-        padding: 10px !important;
+        padding: 12px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -296,17 +296,21 @@ def apply_combos(cart_tuple):
 # -----------------------------
 def main():
     st.title("🛍️ murfeeli 優惠計算器")
-    st.caption("選取商品數量，自動為您試算最划算的組合折扣方案")
+    st.caption("選取商品數量後，點擊頂部「🛒 購物車結帳」頁籤即可即時試算最佳優惠")
     
     # 初始化 Session State
     for p in PRICES: 
         st.session_state.setdefault(f"qty_{p}", 0)
     
-    # 分頁切換選單
-    tab1, tab2 = st.tabs(["🧴 保養系列", "👜 包款與配件"])
+    # 三個頁籤配置
+    tab1, tab2, tab3 = st.tabs(["🧴 保養系列", "👜 包款與配件", "🛒 購物車結帳"])
     
+    # -----------------------------
+    # Tab 1: 保養系列
+    # -----------------------------
     with tab1:
         with st.container(border=True):
+            st.subheader("🧴 保養品選購")
             cols = st.columns(3)
             for idx, p in enumerate(COSMETIC_ITEMS):
                 with cols[idx % 3]:
@@ -319,8 +323,12 @@ def main():
                     )
                     st.caption(f"NT$ {PRICES[p]:,}")
 
+    # -----------------------------
+    # Tab 2: 包款與配件
+    # -----------------------------
     with tab2:
         with st.container(border=True):
+            st.subheader("👜 包款與配件選購")
             cols = st.columns(3)
             for idx, p in enumerate(BAG_ITEMS):
                 with cols[idx % 3]:
@@ -333,34 +341,42 @@ def main():
                     )
                     st.caption(f"NT$ {PRICES[p]:,}")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # 操作按鈕區
-    btn_col1, btn_col2, _ = st.columns([1, 1, 2])
-    with btn_col1:
-        if st.button("🔄 全部清空", use_container_width=True):
-            for p in PRICES: 
-                st.session_state[f"qty_{p}"] = 0
-            st.rerun()
-            
-    with btn_col2:
-        calc_btn = st.button("💰 計算最佳優惠", use_container_width=True)
-
-    # 計算與結果展示
-    if calc_btn:
+    # -----------------------------
+    # Tab 3: 購物車結帳頁面
+    # -----------------------------
+    with tab3:
         cart = {p: st.session_state[f"qty_{p}"] for p in PRICES}
+        selected_items = {p: q for p, q in cart.items() if q > 0}
         total_items = sum(cart.values())
         
         if total_items == 0:
-            st.info("🛒 購物車目前是空的，請先挑選商品數量喔！")
+            st.info("🛒 購物車目前是空的，快到「保養系列」或「包款與配件」挑選商品吧！")
         else:
+            # 結帳標題與重置按鈕
+            c_head1, c_head2 = st.columns([3, 1])
+            with c_head1:
+                st.subheader("📋 購物車試算明細")
+            with c_head2:
+                if st.button("🔄 清空購物車", use_container_width=True):
+                    for p in PRICES: 
+                        st.session_state[f"qty_{p}"] = 0
+                    st.rerun()
+
+            # 已選商品清單預覽
+            with st.container(border=True):
+                st.markdown("##### 📦 已選商品內容")
+                cart_cols = st.columns(3)
+                for idx, (p, q) in enumerate(selected_items.items()):
+                    with cart_cols[idx % 3]:
+                        st.markdown(f"• **{p}** × {q} （`NT$ {PRICES[p]*q:,}`）")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # 進行最佳價格演算
             original = calc_original(cart)
             best, plan = apply_combos(tuple(f"{k}:{v}" for k, v in cart.items()))
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.subheader("✨ 最佳結帳方案")
-            
-            # 三大指標區塊
+
+            # 三大指標卡片
             m_col1, m_col2, m_col3 = st.columns(3)
             m_col1.metric("🛒 總件數", f"{total_items} 件")
             m_col2.metric("📋 原價總計", f"NT$ {original:,}")
@@ -368,14 +384,15 @@ def main():
             
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # 明細展開區塊
+            # 組合拆解明細
             with st.container(border=True):
-                st.markdown("#### 🎯 組合拆解明細")
+                st.markdown("##### 🎯 最佳組合折扣拆解")
                 for name, price in plan:
                     if "原價購買" in name and price == 0:
                         continue
                     st.markdown(f"- **{name}** ： `NT$ {price:,}`")
 
+    # 頁尾說明
     st.markdown("<br>", unsafe_allow_html=True)
     with st.expander("📝 優惠活動規則摘要", expanded=False):
         st.markdown("""
