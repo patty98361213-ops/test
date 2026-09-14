@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-murfeeli 優惠計算器（法式奶油風 UI + 獨立結帳頁面）
+murfeeli 優惠計算器（法式奶油風 UI + 獨立結帳頁面 + 修復 Callback Bug）
 """
 import streamlit as st
 from itertools import combinations
@@ -168,6 +168,13 @@ PACKAGE_TWO_ITEM_DISCOUNTS = [
     (["泡芙包(小)","泡芙包(小藍)","泡芙包(大)","泡芙包(大藍)"] , ["潔顏露"], 0.9), 
     (["中夾","短夾","零錢夾"], ["巧克包","泡芙包(小)","泡芙包(小藍)","泡芙包(大)","泡芙包(大藍)"], 0.95)
 ]
+
+# -----------------------------
+# 回調函數 (清空購物車)
+# -----------------------------
+def reset_cart():
+    for p in PRICES:
+        st.session_state[f"qty_{p}"] = 0
 
 # -----------------------------
 # 核心演算法
@@ -352,15 +359,12 @@ def main():
         if total_items == 0:
             st.info("🛒 購物車目前是空的，快到「保養系列」或「包款與配件」挑選商品吧！")
         else:
-            # 結帳標題與重置按鈕
+            # 結帳標題與重置按鈕 (使用 on_click callback 防止報錯)
             c_head1, c_head2 = st.columns([3, 1])
             with c_head1:
                 st.subheader("📋 購物車試算明細")
             with c_head2:
-                if st.button("🔄 清空購物車", use_container_width=True):
-                    for p in PRICES: 
-                        st.session_state[f"qty_{p}"] = 0
-                    st.rerun()
+                st.button("🔄 清空購物車", on_click=reset_cart, use_container_width=True)
 
             # 已選商品清單預覽
             with st.container(border=True):
