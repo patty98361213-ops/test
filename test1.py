@@ -99,6 +99,10 @@ PRICES = {
 }
 
 COSMETIC_ITEMS = ["潔顏露", "前導水", "富勒烯", "滲透精華", "保濕修復霜", "體香噴霧", "隔離"]
+
+# 可混搭皮夾組（中夾、短夾、零錢夾）
+WALLET_ITEMS = ["中夾", "短夾", "零錢夾"]
+
 # 與保養品概念相同，可個別搭配保養品湊任2件95折/任3件9折的特選單品
 SPECIAL_COMBINE_ITEMS = ["法棍包", "泡芙肩背包", "中夾", "短夾", "零錢夾"]
 BAG_ITEMS = [p for p in PRICES if p not in COSMETIC_ITEMS]
@@ -206,8 +210,30 @@ def apply_combos(cart_tuple):
             if total < best_price:
                 best_price = total
                 best_plan = [(f"{'+'.join(c)} 組合", disc)] + plan
-                
-    # 建立保養品基礎清單
+
+    # 3. 皮夾專屬混搭（中夾、短夾、零錢夾）任三件 9 折
+    wallet_pool = []
+    for w in WALLET_ITEMS:
+        wallet_pool += [w] * cart.get(w, 0)
+
+    if len(wallet_pool) >= 3:
+        for group in set(combinations(wallet_pool, 3)):
+            temp = cart.copy()
+            for g in group:
+                temp[g] -= 1
+
+            group_sum = sum(PRICES[g] for g in group)
+            price = int(round(group_sum * 0.9))
+
+            temp_list = [f"{tk}:{tv}" for tk, tv in temp.items()]
+            new_price, plan = apply_combos(tuple(temp_list))
+
+            total = price + new_price
+            if total < best_price:
+                best_price = total
+                best_plan = [(f"{'+'.join(group)} 皮夾任三件9折", price)] + plan
+
+    # 4. 保養品任三件 9 折
     cosmetics = []
     for p, q in cart.items():
         if p in COSMETIC_ITEMS: 
@@ -219,7 +245,6 @@ def apply_combos(cart_tuple):
         if cart.get(sp, 0) > 0:
             candidate_pools.append(cosmetics + [sp] * cart[sp])
 
-    # 3. 任三件 9 折
     for items in candidate_pools:
         if len(items) >= 3:
             for group in set(combinations(items, 3)):
@@ -244,7 +269,7 @@ def apply_combos(cart_tuple):
                     best_price = total
                     best_plan = [(f"{'+'.join(group)} 任三件9折", price)] + plan
 
-    # 4. 任兩件 95 折
+    # 5. 保養品任兩件 95 折
     for items in candidate_pools:
         if len(items) >= 2:
             for group in set(combinations(items, 2)):
@@ -269,7 +294,7 @@ def apply_combos(cart_tuple):
                     best_price = total
                     best_plan = [(f"{'+'.join(group)} 任兩件95折", price)] + plan
 
-    # 5. 包款與皮夾搭配折扣
+    # 6. 包款與皮夾搭配折扣 (包含皮夾任兩件95折)
     for must_items, optional_items, rate in PACKAGE_TWO_ITEM_DISCOUNTS:
         if optional_items is None:
             eligible = []
@@ -340,7 +365,7 @@ def apply_combos(cart_tuple):
 # UI 介面展示
 # -----------------------------
 def main():
-    st.markdown("<h1 style='text-align: center; color: #8C7662;'>🛍️ murfeeli組合優惠計算器</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #8C7662;'>🛍️ murfeeli優惠計算器</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #A08875;'>即時精算全店最優組合優惠價</p>", unsafe_allow_html=True)
     st.write("")
 
