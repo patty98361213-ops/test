@@ -99,8 +99,8 @@ PRICES = {
 }
 
 COSMETIC_ITEMS = ["潔顏露", "前導水", "富勒烯", "滲透精華", "保濕修復霜", "體香噴霧", "隔離"]
-# 包含中夾、短夾、零錢夾 與 保養品 共同參與任2件95折/3件9折優惠
-DISCOUNT_ELIGIBLE_BASE = COSMETIC_ITEMS + ["中夾", "短夾", "零錢夾"]
+# 與保養品概念相同，可個別搭配保養品湊任2件95折/任3件9折的特選單品
+SPECIAL_COMBINE_ITEMS = ["法棍包", "泡芙肩背包", "中夾", "短夾", "零錢夾"]
 BAG_ITEMS = [p for p in PRICES if p not in COSMETIC_ITEMS]
 
 BIG_SETS = {
@@ -178,9 +178,7 @@ def apply_combos(cart_tuple):
             for i in s: 
                 temp[i] -= 1
             
-            temp_list = []
-            for tk, tv in temp.items():
-                temp_list.append(f"{tk}:{tv}")
+            temp_list = [f"{tk}:{tv}" for tk, tv in temp.items()]
             new_price, plan = apply_combos(tuple(temp_list))
             
             total = price + new_price
@@ -201,9 +199,7 @@ def apply_combos(cart_tuple):
             for i in c: 
                 temp[i] -= 1
                 
-            temp_list = []
-            for tk, tv in temp.items():
-                temp_list.append(f"{tk}:{tv}")
+            temp_list = [f"{tk}:{tv}" for tk, tv in temp.items()]
             new_price, plan = apply_combos(tuple(temp_list))
             
             total = disc + new_price
@@ -211,26 +207,22 @@ def apply_combos(cart_tuple):
                 best_price = total
                 best_plan = [(f"{'+'.join(c)} 組合", disc)] + plan
                 
-    # 建立可享有任選折扣的基礎商品池 (保養品 + 中夾/短夾/零錢夾)
-    base_eligible = []
+    # 建立保養品基礎清單
+    cosmetics = []
     for p, q in cart.items():
-        if p in DISCOUNT_ELIGIBLE_BASE: 
-            base_eligible += [p] * q
+        if p in COSMETIC_ITEMS: 
+            cosmetics += [p] * q
 
-    baguette = list(base_eligible)
-    if "法棍包" in cart: 
-        baguette += ["法棍包"] * cart["法棍包"]
-
-    puff = list(base_eligible)
-    if "泡芙肩背包" in cart: 
-        puff += ["泡芙肩背包"] * cart["泡芙肩背包"]
+    # 建立搭配池（包含純保養品池，以及保養品 + 每個特選單品如法棍包/泡芙肩背包/中夾/短夾/零錢夾的各自組合池）
+    candidate_pools = [cosmetics]
+    for sp in SPECIAL_COMBINE_ITEMS:
+        if cart.get(sp, 0) > 0:
+            candidate_pools.append(cosmetics + [sp] * cart[sp])
 
     # 3. 任三件 9 折
-    for items in [base_eligible, baguette, puff]:
+    for items in candidate_pools:
         if len(items) >= 3:
             for group in set(combinations(items, 3)):
-                if "法棍包" in group and "泡芙肩背包" in group: 
-                    continue
                 temp = cart.copy()
                 valid = True
                 for g in group:
@@ -253,11 +245,9 @@ def apply_combos(cart_tuple):
                     best_plan = [(f"{'+'.join(group)} 任三件9折", price)] + plan
 
     # 4. 任兩件 95 折
-    for items in [base_eligible, baguette, puff]:
+    for items in candidate_pools:
         if len(items) >= 2:
             for group in set(combinations(items, 2)):
-                if "法棍包" in group and "泡芙肩背包" in group: 
-                    continue
                 temp = cart.copy()
                 valid = True
                 for g in group:
