@@ -388,7 +388,7 @@ def main():
 
     with tab_checkout:
         cart = {p: st.session_state[f"qty_{p}"] for p in PRICES if st.session_state[f"qty_{p}"] > 0}
-        total_items = sum(cart.values())  # 總件數計算
+        total_items = sum(cart.values())
         
         st.subheader(f"購物清單確認（共 {total_items} 件）")
         
@@ -404,12 +404,9 @@ def main():
             cart_list = [f"{k}:{v}" for k, v in cart.items()]
             best, plan = apply_combos(tuple(cart_list))
             
-            # 新增總件數於卡片呈現區 (改為 4 欄展示)
-            res_col0, res_col1, res_col2, res_col3 = st.columns(4)
-            with res_col0:
-                st.metric(label="🛍️ 商品總件數", value=f"{total_items} 件")
+            res_col1, res_col2, res_col3 = st.columns(3)
             with res_col1:
-                st.metric(label="💵 商品原價合計", value=f"NT$ {original:,}")
+                st.metric(label="商品原價合計", value=f"NT$ {original:,}")
             with res_col2:
                 st.metric(label="✨ 最優折扣價", value=f"NT$ {best:,}")
             with res_col3:
