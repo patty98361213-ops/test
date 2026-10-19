@@ -116,11 +116,13 @@ COMBOS = {
     ("前導水", "前導水", "前導水", "前導水"): (2320, 2080),
     ("隔離", "隔離", "隔離", "隔離"): (3120, 2780),
     ("富勒烯", "富勒烯"): (2160, 1880),
-    ("富勒烯", "前導水"): (1660, 1480),
+    ("富勒烯", "前導水"): (1660, 1450),
     ("富勒烯", "潔顏露"): (1560, 1380),
     ("前導水", "潔顏露"): (1060, 1000),
     ("富勒烯", "保濕修復霜"): (2160, 1980),
     ("前導水", "保濕修復霜"): (1660, 1480),
+    ("富勒烯", "滲透精華"): (2160, 2026),
+    ("滲透精華", "保濕修復霜"): (2160, 1980),
 }
 
 COMBOS_SORTED = sorted(COMBOS.items(), key=lambda x: (x[1][0] - x[1][1]) / x[1][0], reverse=True)
@@ -351,8 +353,8 @@ def apply_combos(cart_tuple):
 # UI 介面展示
 # -----------------------------
 def main():
-    st.markdown("<h1 style='text-align: center; color: #8C7662;'>🛍️ murfeeli組合優惠計算器</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #A08875;'>即時精算全店最優組合優惠價</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #8C7662;'>夢時代組合優惠計算器</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #A08875;'>活動時間：10/19-11/15</p>", unsafe_allow_html=True)
     st.write("")
 
     for p in PRICES: 
